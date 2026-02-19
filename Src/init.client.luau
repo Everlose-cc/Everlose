@@ -1,4 +1,5 @@
-wax.shared.Everlose = true
+print('loading')
+wax.shared.EverloseStartTime = tick()
 
 print(wax)
 for i,v in wax do
