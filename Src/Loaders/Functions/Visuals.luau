@@ -17,7 +17,7 @@ return function()
 		local Humanoid = wax.shared.WaitForChildOfClass(Character, "Humanoid", 5)
 		local RootPart = Character:WaitForChild("HumanoidRootPart", 5)
 
-		local Color = Color3.new(1, 1, 1)
+		local Color = (PlayerFromCharacter.Team == nil and Options.PlayerEspColor.Value or PlayerFromCharacter.TeamColor.Color)
 		local EspElement = ESPLibrary:Add({
 			Name = "",
 			Model = Character,
@@ -84,7 +84,7 @@ return function()
 				end
 			end,
 		})
-		EspElement:SetEveryColor(Color, false)
+		EspElement:SetEveryColor(Color, true)
 		EspElement.CurrentSettings.Tracer.Enabled = ESPLibrary.GlobalConfig.Tracers
 		EspElement.CurrentSettings.Arrow.Enabled = ESPLibrary.GlobalConfig.Arrows
 		EspElement.CurrentSettings.Box2D.Enabled = ESPLibrary.GlobalConfig.Boxes2D

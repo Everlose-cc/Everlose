@@ -1,4 +1,5 @@
 --!nocheck
+
 wax.shared.EverloseStartTime = tick()
 
 local deividcomsonoObsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -22,6 +23,12 @@ wax.shared.Signals = {
 	CharacterAdded = wax.shared.Signal.new(),
 }
 
+wax.shared.DefaultValues = {
+	['Humanoid'] = {
+		['WalkSpeed'] = 16,
+	}
+}
+
 wax.shared['WaitForChildOfClass'] = function(Parent: Instance, ClassName: string, TimeOut: number?)
 	local StartTime = tick()
 	while task.wait() and (StartTime+TimeOut)-tick() > 0 and Parent do
@@ -31,16 +38,26 @@ wax.shared['WaitForChildOfClass'] = function(Parent: Instance, ClassName: string
 	return nil
 end
 
+local ConnectionsHandler = require("Utils/Connections")
+wax.shared.ConnectionsHandler = ConnectionsHandler
+
+local ThreadsHandler = require("Utils/ThreadsHandler")
+wax.shared.ThreadsHandler = ThreadsHandler
+
 getgenv().UnloadEverlose = function()
 	local StartTime = tick()
 	for _, Connection: RBXScriptConnection in wax.shared.Connections do
 		Connection:Disconnect()
 	end
 	table.clear(wax.shared.Connections)
-	for _,Signal:RBXScriptSignal in wax.shared.Signals do
+	for _, Signal in wax.shared.Signals do
 		Signal:DisconnectAll()
 	end
 	table.clear(wax.shared.Signals)
+	for _, Thread:thread in wax.shared.Threads do
+		task.cancel(Thread)
+	end
+	table.clear(wax.shared.Threads)
 
 	EspLibrary:Destroy()
 	Library:Unload()
@@ -64,6 +81,8 @@ Services:GetServices({
 	"Players",
 	"ReplicatedStorage",
 	"CoreGui",
+	"VirtualUser",
+	"ProximityPromptService",
 })
 wax.shared.Services = Services
 
@@ -84,20 +103,32 @@ wax.shared.LocalPlayer = LocalPlayer
 
 --// Loader
 wax.shared.Load = function(Type: 'Tabs' | 'Functions', LoaderName:string)
+	warn('Loaded: ' .. Type .. '/' .. LoaderName)
 	return require('Loaders/'..Type..'/'..LoaderName)
 end
 
 --// Hooking Service
-local HookingService = require("Utils/HookingService")
-wax.shared.HookingService = HookingService
+wax.shared.Hooks = {}
+
+local HasOth = (getgenv()['oth'] ~= nil and true or false)
+
+local IsHooked = (getgenv()['ishooked'] or getgenv()['isfunctionhooked']) or function(fn:AnyFunction)
+    for _,Hook in wax.shared.Hooks do
+        if Hook.OldFunction == fn then
+            return true
+        end
+    end
+    return false
+end
+
+wax.shared.IsHooked = IsHooked
+wax.shared.HasOth = HasOth
 
 --// UI
 local _UI = require("Utils/UI")
 
-
 --// Connections
 local LocalCharacterAddedHandler = require("Utils/LocalPlayer/CharacterAdded")
-local ConnectionsHandler = require("Utils/Connections")
 if LocalPlayer.Character then
 	LocalCharacterAddedHandler(LocalPlayer.Character)
 end
@@ -110,6 +141,5 @@ for _,Player in Players:GetPlayers() do
 end
 table.insert(Connections, Players.PlayerAdded:Connect(HandlePlayerAdded))
 
-wax.shared.ConnectionsHandler = ConnectionsHandler
 
 warn("EVERLOSE: Loading Done.")
