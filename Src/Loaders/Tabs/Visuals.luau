@@ -38,10 +38,10 @@ return function()
 		Callback = function(Color: Color3)
 			for _, ESP in wax.shared.ESPCache.Players do
 				local S, E = pcall(function()
-					local PlrFromChar = Players:GetPlayerFromCharacter(ESP.Model)
+					local PlrFromChar = Players:GetPlayerFromCharacter(ESP.CurrentSettings.Model)
 					if PlrFromChar then
 						local FinalColor: Color3 = (PlrFromChar.Team == nil and Color or PlrFromChar.TeamColor.Color)
-						ESP:SetEveryColor(FinalColor, true)
+						ESP:SetEveryColor(FinalColor, false)
 					end
 				end)
 				if not S then
