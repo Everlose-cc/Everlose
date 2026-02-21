@@ -59,7 +59,7 @@ function FlyModule.Setup()
                 elseif Input.KeyCode == Enum.KeyCode.Space then
                     Directions.Up = 1
                 elseif Input.KeyCode == Enum.KeyCode.LeftControl then
-                    Directions.Down = 1
+                    Directions.Down = -1
                 end
             end),
             ConnectionsHandler:GiveSignal(UserInputService.InputEnded, function(Input: InputObject, GameProcessed: boolean)
