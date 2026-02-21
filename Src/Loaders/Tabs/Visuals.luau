@@ -14,11 +14,14 @@ return function()
 	local Services = wax.shared.Services
 	local Visuals = Tabs["Visuals"]
 
-    local Players = Services:GetService("Players")
+    local Players: Players = Services:GetService("Players")
+	local TextChatService: TextChatService = Services:GetService("TextChatService")
 
 	local LeftTabBox = Visuals:AddLeftTabbox({
 		Title = "ESP",
 	})
+	local RightGroupbox = Visuals:AddRightGroupbox("Misc")
+
 	local ESP, EspSettings = LeftTabBox:AddTab("ESP"), LeftTabBox:AddTab("Settings")
 
 	local PlayerEsp = ESP:AddToggle("PlayerEsp", {
@@ -129,4 +132,12 @@ return function()
 	ESPLibrary.GlobalConfig.Boxes2D = false
 	ESPLibrary.GlobalConfig.Boxes3D = false
 	ESPLibrary.GlobalConfig.Skeleton = false
+
+	RightGroupbox:AddToggle("ChatWindow", {
+		Text = "Chat Window",
+		Default = false,
+		Callback = function(Value: boolean)
+			TextChatService.ChatWindowConfiguration.Enabled = Value
+		end,
+	})
 end
