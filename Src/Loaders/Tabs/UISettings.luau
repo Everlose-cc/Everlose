@@ -33,7 +33,7 @@ return function()
 		getgenv().UnloadEverlose = nil
 
 		print("Everlose Unloaded, took: " .. (tick() - StartTime) .. " seconds.")
-		print("Everlose ran for: " .. (tick() - StartTime) .. " seconds.")
+		print("Everlose ran for: " .. (tick() - wax.shared.EverloseStartTime) .. " seconds.")
 	end
 
 	local Options = Library.Options
