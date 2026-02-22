@@ -15,7 +15,7 @@ return function(Character: Model)
 	local Humanoid = wax.shared.WaitForChildOfClass(Character, "Humanoid", 5)
 	if Humanoid then
 		wax.shared.LocalHumanoid = Humanoid
-        wax.shared.CurrentFly = FlyModule.Setup()
+		wax.shared.CurrentFly = FlyModule.Setup()
 
 		ConnectionsHandler:GiveSignal(Humanoid:GetPropertyChangedSignal("WalkSpeed"), function()
 			local IsWalkSpeedDown: boolean = (Options.WalkSpeedToggleBind:GetState() and Toggles.WalkSpeedToggle.Value)

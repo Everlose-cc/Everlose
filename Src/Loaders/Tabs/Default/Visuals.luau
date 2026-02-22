@@ -5,16 +5,13 @@ return function()
 		Players = {},
 	}
 
-    local ESPLibrary = wax.shared.EspLibrary
-
-	-- local Library: Library = wax.shared.Library
-	-- local Window: Window = wax.shared.Window
+	local ESPLibrary = wax.shared.EspLibrary
+	local Services = wax.shared.Services
 	local Tabs: { [string]: Tab } = wax.shared.Tabs
 
-	local Services = wax.shared.Services
 	local Visuals = Tabs["Visuals"]
 
-    local Players: Players = Services:GetService("Players")
+	local Players: Players = Services:GetService("Players")
 	local TextChatService: TextChatService = Services:GetService("TextChatService")
 
 	local LeftTabBox = Visuals:AddLeftTabbox({
@@ -63,6 +60,7 @@ return function()
 		Text = "Esp Type",
 		Searchable = true,
 	})
+
 	EspSettings:AddSlider("TextSize", {
 		Text = "Text Size",
 		Default = 16,
@@ -76,6 +74,7 @@ return function()
 			end
 		end,
 	})
+
 	EspSettings:AddToggle("RainbowEsp", {
 		Text = "Rainbow Esp",
 		Default = false,
@@ -83,6 +82,7 @@ return function()
 			ESPLibrary.GlobalConfig.Rainbow = Value
 		end,
 	})
+
 	local Tracers = EspSettings:AddToggle("Tracers", {
 		Text = "Tracers",
 		Default = false,
@@ -93,6 +93,7 @@ return function()
 			end
 		end,
 	})
+
 	EspSettings:AddDropdown("TracerStartPos", {
 		Values = { "Bottom", "Center", "Top", "Mouse" },
 		Default = "Bottom",
@@ -105,6 +106,7 @@ return function()
 			end
 		end,
 	})
+
 	local Arrows = EspSettings:AddToggle("Arrows", {
 		Text = "Arrows",
 		Default = false,
@@ -115,6 +117,7 @@ return function()
 			end
 		end,
 	})
+
 	local Fonts = Enum.Font:GetEnumItems()
 	EspSettings:AddDropdown("EspFont", {
 		Values = Fonts,
@@ -125,6 +128,12 @@ return function()
 		Callback = function(Value: Enum.Font)
 			ESPLibrary.GlobalConfig.Font = Value
 		end,
+	})
+
+	RightGroupbox:AddButton("Disguiser", {
+		Title = "Disguiser",
+		ToolTip = "Changes you\'r HumanoidDescription to the given UserId\'s HumanoidDescription (This feature is experimental and some games might detect it.)",
+		Risky = true,
 	})
 
 	ESPLibrary.GlobalConfig.Arrows = Arrows.Value

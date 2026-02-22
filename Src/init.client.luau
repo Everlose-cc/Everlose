@@ -28,14 +28,16 @@ wax.shared.DefaultValues = {
 		["WalkSpeed"] = 16,
 		["JumpPower"] = 50,
 		["JumpHeight"] = 7.2,
-	}
+	},
 }
 
 wax.shared["WaitForChildOfClass"] = function(Parent: Instance, ClassName: string, TimeOut: number?)
 	local StartTime = tick()
-	while task.wait() and (StartTime+TimeOut)-tick() > 0 and Parent do
+	while task.wait() and (StartTime + TimeOut) - tick() > 0 and Parent do
 		local Inst = Parent:FindFirstChildOfClass(ClassName)
-		if Inst then return Inst end
+		if Inst then
+			return Inst
+		end
 	end
 	return nil
 end
@@ -78,17 +80,20 @@ local function HandlePlayerAdded(Player: Player)
 	if Player.Character then
 		wax.shared.Signals.CharacterAdded:Fire(Player.Character)
 	end
-	table.insert(Connections, Player.CharacterAdded:Connect(function(Character: Model)
-		wax.shared.Signals.CharacterAdded:Fire(Character)
-	end))
+	table.insert(
+		Connections,
+		Player.CharacterAdded:Connect(function(Character: Model)
+			wax.shared.Signals.CharacterAdded:Fire(Character)
+		end)
+	)
 end
 
 wax.shared.LocalPlayer = LocalPlayer
 
 --// Loader
-wax.shared.Load = function(Type: "Tabs" | "Functions", LoaderName:string)
+wax.shared.Load = function(Type: "Tabs" | "Functions", Folder: string, LoaderName: string)
 	warn("Loaded: " .. Type .. "/" .. LoaderName)
-	return require("Loaders/"..Type.."/"..LoaderName)
+	return require("Loaders/" .. Type .. "/" .. Folder .. "/" .. LoaderName)
 end
 
 --// Hooking Service
@@ -96,14 +101,15 @@ wax.shared.Hooks = {}
 
 local HasOth = (getgenv()["oth"] ~= nil and true or false)
 
-local IsHooked = (getgenv()["ishooked"] or getgenv()["isfunctionhooked"]) or function(fn:AnyFunction)
-    for _,Hook in wax.shared.Hooks do
-        if Hook.OldFunction == fn then
-            return true
-        end
-    end
-    return false
-end
+local IsHooked = (getgenv()["ishooked"] or getgenv()["isfunctionhooked"])
+	or function(fn: AnyFunction)
+		for _, Hook in wax.shared.Hooks do
+			if Hook.OldFunction == fn then
+				return true
+			end
+		end
+		return false
+	end
 
 wax.shared.IsHooked = IsHooked
 wax.shared.HasOth = HasOth
@@ -118,12 +124,14 @@ if LocalPlayer.Character then
 end
 ConnectionsHandler:GiveSignal(LocalPlayer.CharacterAdded, LocalCharacterAddedHandler)
 
-for _,Player in Players:GetPlayers() do
+for _, Player in Players:GetPlayers() do
 	if Player ~= LocalPlayer then
 		HandlePlayerAdded(Player)
 	end
 end
 ConnectionsHandler:GiveSignal(Players.PlayerAdded, HandlePlayerAdded)
 
+wax.shared.Load("Tabs", "Default", "UISettings")()
+wax.shared.Load("Functions", "Default", "UISettings")()
 
 warn("EVERLOSE: Loading Done.")

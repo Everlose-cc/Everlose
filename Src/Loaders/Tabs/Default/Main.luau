@@ -67,7 +67,7 @@ return function()
 		end
 	end
 
-	CharacterGroupbox:AddDivider('WalkSpeed')
+	CharacterGroupbox:AddDivider("WalkSpeed")
 
 	local WalkSpeedToggle = CharacterGroupbox:AddToggle("WalkSpeedToggle", {
 		Text = "WalkSpeed",
@@ -91,7 +91,7 @@ return function()
 		Callback = ResetWalkSpeed,
 	})
 
-	CharacterGroupbox:AddDivider('JumpPower')
+	CharacterGroupbox:AddDivider("JumpPower")
 
 	local JumpPowerToggle = CharacterGroupbox:AddToggle("JumpPowerToggle", {
 		Text = "JumpPower",
@@ -115,7 +115,7 @@ return function()
 		Callback = ResetJumpPower,
 	})
 
-	CharacterGroupbox:AddDivider('Fly')
+	CharacterGroupbox:AddDivider("Fly")
 
 	local FlyToggle = CharacterGroupbox:AddToggle("FlyToggle", {
 		Text = "Fly",
