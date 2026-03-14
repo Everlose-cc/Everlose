@@ -13,6 +13,7 @@ local Services = {
 	UserInputService = cloneref(game:GetService("UserInputService")),
 	RunService = cloneref(game:GetService("RunService")),
 	Players = cloneref(game:GetService("Players")),
+	Stats = cloneref(game:GetService("Stats")),
 }
 wax.shared.Services = Services
 
@@ -58,6 +59,8 @@ local ThemeManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addon
 local SaveManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addons/SaveManager.lua"))()
 local EspLibrary = loadstring(game:HttpGet(mstudio45MSESPRepo .. "source.luau"))()
 
+wax.shared.ClientUtils = require("Modules/Utils/ClientUtils")
+
 wax.shared.Promise = require("Modules/Utils/Promise")
 wax.shared.Janitor = require("Modules/Performance/Janitor")
 
@@ -91,7 +94,7 @@ end
 ------------------------
 wax.shared["WaitForChildOfClass"] = function(Parent: Instance, ClassName: string, TimeOut: number?)
 	local StartTime = os.clock()
-	while RunService.Stepped:Wait() and (StartTime + TimeOut) - os.clock() > 0 and Parent do
+	while Services.RunService.Stepped:Wait() and (StartTime + TimeOut) - os.clock() > 0 and Parent do
 		local Inst = Parent:FindFirstChildOfClass(ClassName)
 		if Inst then
 			return Inst

@@ -58,17 +58,31 @@ return function(From: Vector3, To: Vector3)
 	local A1 = Inst:FindFirstChild("A1")
 	local Beam = Inst:FindFirstChild("Beam")
 
+	Beam.Width0 = 1
+	Beam.Width1 = 1
+
+	local Tween = Inst:FindFirstChild("Tween")
+		or TweenService:Create(Beam, DefaultInfo.TweenInfo, { Width0 = 0, Width1 = 0 })
+	Tween.Parent = Inst
+
 	A0.Position = From
 	A1.Position = To
 	Beam.Enabled = true
 
 	Inst.Parent = workspace.Terrain
 
-	wax.shared.Janitor:Add(task.delay(DefaultInfo.Duration, function()
-		local Tween = TweenService:Create(Beam, DefaultInfo.TweenInfo, { Width0 = 0, Width1 = 0 })
-		Tween:Play()
-		Tween.Completed:Wait()
-
-		BeamCache:ReturnInstance(Inst)
-	end))
+	local UID = newproxy(false)
+	local Promise = wax.shared.Promise
+		.new(function(resolve, reject, onCancel)
+			task.wait(DefaultInfo.Duration)
+			wax.shared.Janitor:Add(Tween.Completed:Once(resolve))
+			Tween:Play()
+			wax.shared.Janitor:RemoveNoClean(UID)
+		end)
+		:finally(function()
+			wax.shared.Janitor:Remove(UID)
+			Beam.Enabled = false
+			BeamCache:ReturnInstance(Inst)
+		end)
+	wax.shared.Janitor:Add(Promise, "cancel", UID)
 end
