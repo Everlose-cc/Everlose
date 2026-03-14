@@ -1,5 +1,53 @@
 --!nocheck
 
+if shared["EverloseLoaded"] == true then
+	warn("EL is already loaded.")
+	return
+end
+shared.EverloseLoaded = true
+
+--// Services
+-------------
+
+local Services = {
+	UserInputService = cloneref(game:GetService("UserInputService")),
+	RunService = cloneref(game:GetService("RunService")),
+	Players = cloneref(game:GetService("Players")),
+}
+wax.shared.Services = Services
+
+wax.shared.LocalPlayer = Services.Players.LocalPlayer
+
+--// SafeCall
+-------------
+local function SafeCall(Func: (...any) -> ...any, ...: any)
+	if not (Func and typeof(Func) == "function") then
+		return
+	end
+
+	local Result = table.pack(xpcall(Func, function(Error: string)
+		wax.shared.Janitor:Add(task.defer(error, debug.traceback(Error, 2)))
+		return Error
+	end, ...))
+
+	if not Result[1] then
+		return nil
+	end
+
+	return table.unpack(Result, 2, Result.n)
+end
+
+wax.shared.SafeCall = SafeCall
+
+function shared.EverloseInternalUnload()
+	SafeCall(wax.shared.Library.Unload, wax.shared.Library.Unload)
+	SafeCall(wax.shared.EspLibrary.Destroy, wax.shared.EspLibrary.Destroy)
+	SafeCall(wax.shared.Janitor.Destroy, wax.shared.Janitor.Destroy)
+
+	shared.EverloseLoaded = nil
+	shared.EverloseInternalUnload = nil
+end
+
 wax.shared.EverloseStartTime = tick()
 
 local deividcomsonoObsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -10,30 +58,40 @@ local ThemeManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addon
 local SaveManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addons/SaveManager.lua"))()
 local EspLibrary = loadstring(game:HttpGet(mstudio45MSESPRepo .. "source.luau"))()
 
+wax.shared.Promise = require("Modules/Utils/Promise")
+wax.shared.Janitor = require("Modules/Performance/Janitor")
+
+wax.shared.InstanceCache = require("Modules/Performance/InstanceCache")
+wax.shared.Tracers = require("Modules/VisualStuff/Tracers")
+
 wax.shared.Library = Library
 wax.shared.ThemeManager = ThemeManager
 wax.shared.SaveManager = SaveManager
 wax.shared.EspLibrary = EspLibrary
 
-local Connections = require("Utils/Connections")
-local Signal = require("Utils/Signal")
-wax.shared.Signal = Signal
-wax.shared.Signals = {
-	PlayerAdded = wax.shared.Signal.new(),
-	CharacterAdded = wax.shared.Signal.new(),
-}
+--// Drawings
+-------------
+wax.shared.Drawings = {}
 
-wax.shared.DefaultValues = {
-	["Humanoid"] = {
-		["WalkSpeed"] = 16,
-		["JumpPower"] = 50,
-		["JumpHeight"] = 7.2,
-	},
-}
+--// Groupboxes
+---------------
+wax.shared.Groupboxes = {}
+wax.shared.RefreshGroupboxes = function()
+	for _, v in wax.shared.Library.Tabs do
+		for i, k in v.Groupboxes do
+			if wax.shared.Groupboxes[i] then
+				continue
+			end
+			wax.shared.Groupboxes[i] = k
+		end
+	end
+end
 
+--// WaitForChildOfClass
+------------------------
 wax.shared["WaitForChildOfClass"] = function(Parent: Instance, ClassName: string, TimeOut: number?)
-	local StartTime = tick()
-	while task.wait() and (StartTime + TimeOut) - tick() > 0 and Parent do
+	local StartTime = os.clock()
+	while RunService.Stepped:Wait() and (StartTime + TimeOut) - os.clock() > 0 and Parent do
 		local Inst = Parent:FindFirstChildOfClass(ClassName)
 		if Inst then
 			return Inst
@@ -42,96 +100,61 @@ wax.shared["WaitForChildOfClass"] = function(Parent: Instance, ClassName: string
 	return nil
 end
 
-local ConnectionsHandler = require("Utils/Connections")
-wax.shared.ConnectionsHandler = ConnectionsHandler
-
-local ThreadsHandler = require("Utils/ThreadsHandler")
-wax.shared.ThreadsHandler = ThreadsHandler
-
-Library.ForceCheckbox = true
-
--- local Options = Library.Options
--- local Toggles = Library.Toggles
-
---// Services
-local Services = require("Utils/Services")
-Services:GetServices({
-	"RunService",
-	"UserInputService",
-	"TweenService",
-	"ContextActionService",
-	"Players",
-	"ReplicatedStorage",
-	"CoreGui",
-	"VirtualUser",
-	"ProximityPromptService",
-	"TextChatService",
-})
-wax.shared.Services = Services
-
-local FlyModule = require("Utils/LocalPlayer/Fly")
-wax.shared.FlyModule = FlyModule
-
-local Players: Players = Services:GetService("Players")
-local LocalPlayer: Player = Players.LocalPlayer
-
-local function HandlePlayerAdded(Player: Player)
-	wax.shared.Signals.PlayerAdded:Fire(Player)
-	if Player.Character then
-		wax.shared.Signals.CharacterAdded:Fire(Player.Character)
+--// DeepCopy
+-------------
+wax.shared.DeepCopy = function(orig: AnyTable, copies: { [AnyTable]: any })
+	copies = copies or {}
+	local orig_type = typeof(orig)
+	local copy
+	if orig_type == "table" then
+		if copies[orig] then
+			copy = copies[orig]
+		else
+			copy = {}
+			copies[orig] = copy
+			for orig_key, orig_value in next, orig, nil do
+				copy[wax.shared.DeepCopy(orig_key, copies)] = wax.shared.DeepCopy(orig_value, copies)
+			end
+			setmetatable(copy, wax.shared.DeepCopy(getmetatable(orig), copies))
+		end
+	else
+		copy = orig
 	end
-	table.insert(
-		Connections,
-		Player.CharacterAdded:Connect(function(Character: Model)
-			wax.shared.Signals.CharacterAdded:Fire(Character)
-		end)
-	)
+	return copy
 end
 
-wax.shared.LocalPlayer = LocalPlayer
+--// Window
+-----------
+local Window: Window = Library:CreateWindow({
+	Title = "Everlose",
+	Footer = `Version: {"Alpha"}: {"0.0.1"}`,
+	Icon = 89401785954152,
+	NotifySide = "Right",
+	ShowCustomCursor = true,
+})
+--[[
+local Tabs = {
+	Main = Window:AddTab({
+		Name = "Main",
+		Icon = "circle-user-round",
+		Description = "Main features such as Speed, Jump, and more.",
+	}),
+	Visuals = Window:AddTab({
+		Name = "Visuals",
+		Icon = "eye",
+		Description = "Visual features such as ESP and Chams.",
+	}),
+}
+]]
+
+wax.shared.Window = Window
+wax.shared.Tabs = {}
 
 --// Loader
-wax.shared.Load = function(Type: "Tabs" | "Functions", Folder: string, LoaderName: string)
-	warn("Loaded: " .. Type .. "/" .. LoaderName)
-	return require("Loaders/" .. Type .. "/" .. Folder .. "/" .. LoaderName)
+-----------
+wax.shared.Load = function(LoaderName: string, Type: string)
+	warn("Loaded: " .. LoaderName .. "/" .. Type)
+	return require("Loaders/" .. LoaderName .. "/" .. Type)()
 end
-
---// Hooking Service
-wax.shared.Hooks = {}
-
-local HasOth = (getgenv()["oth"] ~= nil and true or false)
-
-local IsHooked = (getgenv()["ishooked"] or getgenv()["isfunctionhooked"])
-	or function(fn: AnyFunction)
-		for _, Hook in wax.shared.Hooks do
-			if Hook.OldFunction == fn then
-				return true
-			end
-		end
-		return false
-	end
-
-wax.shared.IsHooked = IsHooked
-wax.shared.HasOth = HasOth
-
---// UI
-local _UI = require("Utils/UI")
-
---// Connections
-local LocalCharacterAddedHandler = require("Utils/LocalPlayer/CharacterAdded")
-if LocalPlayer.Character then
-	LocalCharacterAddedHandler(LocalPlayer.Character)
-end
-ConnectionsHandler:GiveSignal(LocalPlayer.CharacterAdded, LocalCharacterAddedHandler)
-
-for _, Player in Players:GetPlayers() do
-	if Player ~= LocalPlayer then
-		HandlePlayerAdded(Player)
-	end
-end
-ConnectionsHandler:GiveSignal(Players.PlayerAdded, HandlePlayerAdded)
-
-wax.shared.Load("Tabs", "Default", "UISettings")()
-wax.shared.Load("Functions", "Default", "UISettings")()
 
 warn("EVERLOSE: Loading Done.")
