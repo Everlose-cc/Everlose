@@ -1,37 +1,13 @@
 {
-    "luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
-    "luau-lsp.sourcemap.enabled": true,
-
     "luau-lsp.types.definitionFiles": {
-        "0": ".vscode/exploitTypes.d.luau",
-        "1": ".vscode/Librarys.d.luau"
-    },
-    "luau-lsp.types.robloxSecurityLevel": "RobloxScriptSecurity",
-
-    "luau-lsp.plugin.maximumRequestBodySize": "1gb",
-    "luau-lsp.plugin.enabled": true,
-
-    "luau-lsp.diagnostics.strictDatamodelTypes": false,
-    "luau-lsp.diagnostics.workspace": true,
-
-    "luau-lsp.sourcemap.autogenerate": true,
-    "luau-lsp.sourcemap.includeNonScripts": true,
-
-    "luau-lsp.ignoreGlobs": [
-        "Distribution/**",
-        ".vscode/**",
-        ".lune/**",
-        "Build/**"
-    ],
-
-    "luau-lsp.bytecode.vectorCtor": "new",
-    "luau-lsp.bytecode.vectorLib": "Vector3",
-    "luau-lsp.bytecode.vectorType": "Vector3",
-
-    "stylua.verify": true,
-
-    "[luau]": {
-        "editor.defaultFormatter": "JohnnyMorganz.stylua"
+        "0": ".vscode/wax.d.luau",
+        "1": ".vscode/exploit.d.luau",
+        "2": ".vscode/espLibrary.d.luau",
+        "3": ".vscode/library.d.luau",
+        "4": ".vscode/promise.d.luau",
+        "5": ".vscode/janitor.d.luau",
+        "6": ".vscode/queryBuilder.d.luau"
     },
     "stylua.targetReleaseVersion": "latest",
+    "stylua.disableVersionCheck": true
 }

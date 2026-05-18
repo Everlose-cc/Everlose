@@ -48,9 +48,6 @@ export type Notification = {
     SoundId: string | number?,
     Steps: number?,
     Persist: boolean?,
-    Icon: string?,
-    BigIcon: string?,
-    IconColor: Color3 | string?,
     Destroyed: boolean,
 
     Resize: (self: Notification) -> (),
@@ -561,7 +558,7 @@ export type Option =
 
 --// Container Types
 export type BaseGroupbox = {
-    AddDivider: (self: Groupbox, MarginTop: number?, MarginBottom: number?) -> (),
+    AddDivider: (self: Groupbox) -> (),
     AddLabel: (
         self: Groupbox,
         Info: { Text: string, DoesWrap: boolean?, Size: number?, Visible: boolean?, Idx: string? } | string,
@@ -677,24 +674,6 @@ export type KeyTab = BaseGroupbox & {
     Hide: (self: KeyTab) -> (),
 }
 
-export type DialogButtonInfo = {
-    Title: string,
-    Variant: string?,
-    WaitTime: number?,
-    Order: number?,
-    Callback: (() -> ())?
-}
-
-export type Dialog = {
-    SetTitle: (self: Dialog, Title: string) -> (),
-    SetDescription: (self: Dialog, Description: string) -> (),
-    AddFooterButton: (self: Dialog, ButtonIdx: string, ButtonInfo: DialogButtonInfo) -> (),
-    RemoveFooterButton: (self: Dialog, ButtonIdx: string) -> (),
-    SetButtonDisabled: (self: Dialog, ButtonIdx: string, Disabled: boolean) -> (),
-    SetButtonOrder: (self: Dialog, ButtonIdx: string, Order: number) -> (),
-    Dismiss: (self: Dialog) -> (),
-}
-
 export type Window = {
     IsSidebarCompacted: (self: Window) -> boolean,
     GetSidebarWidth: (self: Window) -> number,
@@ -711,22 +690,6 @@ export type Window = {
         Icon: string?,
         Description: string?
     ) -> KeyTab,
-    AddDialog: (
-        self: Window,
-        Info: {
-            Title: string,
-            Description: string?,
-            Icon: string?,
-            TitleColor: Color3?,
-            DescriptionColor: Color3?,
-            AutoDismiss: boolean?,
-            OutsideClickDismiss: boolean?,
-            FooterButtons: { [string]: DialogButtonInfo }?
-        }
-    ) -> Dialog,
-    ChangeTitle: (self: Window, Title: string) -> (),
-    ChangeBackgroundImage: (self: Window, Image: string) -> (),
-    ChangeFooter: (self: Window, Footer: string) -> (),
 }
 
 --// Main Library Type
@@ -873,5 +836,3 @@ export type Library = {
     ) -> Window,
     Toggle: (self: Library, Value: boolean?) -> (),
 }
-
-return nil

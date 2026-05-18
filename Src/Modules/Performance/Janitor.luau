@@ -23,7 +23,7 @@ local INVALID_METHOD_NAME =
 local METHOD_NOT_FOUND_ERROR = "Object %* doesn't have method %*, are you sure you want to add it? Traceback: %*"
 local NOT_A_PROMISE = "Invalid argument #1 to 'Janitor:AddPromise' (Promise expected, got %* (%*)) Traceback: %*"
 
-export type Janitor = typeof(setmetatable(
+type Janitor = typeof(setmetatable(
 	{} :: {
 		CurrentlyCleaning: boolean,
 		SuppressInstanceReDestroy: boolean,

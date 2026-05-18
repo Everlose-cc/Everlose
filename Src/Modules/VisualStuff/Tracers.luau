@@ -1,7 +1,7 @@
-local TweenService = cloneref(game:GetService("TweenService"))
+local TweenService: TweenService = wax.shared.Services.TweenService
 
 local DefaultInfo = {
-	Duration = 5,
+	Duration = 1.5,
 	TweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
 }
 
@@ -79,7 +79,7 @@ return function(From: Vector3, To: Vector3)
 			Tween:Play()
 			wax.shared.Janitor:RemoveNoClean(UID)
 		end)
-		:finally(function()
+		:andThen(function()
 			wax.shared.Janitor:Remove(UID)
 			Beam.Enabled = false
 			BeamCache:ReturnInstance(Inst)

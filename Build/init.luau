@@ -1,3 +1,5 @@
+--!nocheck
+
 -- MIT License | Copyright (c) 2023-2024 Latte Softworks <https://latte.to>
 
 if string.sub(_VERSION, 1, 4) ~= "Lune" then

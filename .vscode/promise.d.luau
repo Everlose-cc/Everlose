@@ -1,7 +1,24 @@
-export type Status = "Started" | "Resolved" | "Rejected" | "Cancelled"
-export type ErrorKind = "ExecutionError" | "AlreadyCancelled" | "NotResolvedInTime" | "TimedOut"
+export type PromiseStatus = "Started" | "Resolved" | "Rejected" | "Cancelled"
+export type PromiseErrorKind = "ExecutionError" | "AlreadyCancelled" | "NotResolvedInTime" | "TimedOut"
 
-type ErrorStaticAndShared = {
+type Connection = {
+	Disconnect: (self: Connection) -> (),
+	Destroy: (self: Connection) -> (),
+	Connected: boolean,
+}
+
+type Signal<T...> = {
+	Fire: (self: Signal<T...>, T...) -> (),
+	FireDeferred: (self: Signal<T...>, T...) -> (),
+	Connect: (self: Signal<T...>, fn: (T...) -> ()) -> Connection,
+	Once: (self: Signal<T...>, fn: (T...) -> ()) -> Connection,
+	DisconnectAll: (self: Signal<T...>) -> (),
+	GetConnections: (self: Signal<T...>) -> { Connection },
+	Destroy: (self: Signal<T...>) -> (),
+	Wait: (self: Signal<T...>) -> T...,
+}
+
+export type PromiseErrorStaticAndShared = {
 	Kind: {
 		ExecutionError: "ExecutionError",
 		AlreadyCancelled: "AlreadyCancelled",
@@ -9,32 +26,32 @@ type ErrorStaticAndShared = {
 		TimedOut: "TimedOut",
 	},
 }
-type ErrorOptions = {
+export type PromiseErrorOptions = {
 	error: string,
 	trace: string?,
 	context: string?,
-	kind: ErrorKind,
+	kind: PromiseErrorKind,
 }
 
-export type Error = typeof(setmetatable(
-	{} :: ErrorStaticAndShared & {
+export type PromiseError = typeof(setmetatable(
+	{} :: PromiseErrorStaticAndShared & {
 		error: string,
 		trace: string?,
 		context: string?,
-		kind: ErrorKind,
-		parent: Error?,
+		kind: PromiseErrorKind,
+		parent: PromiseError?,
 		createdTick: number,
 		createdTrace: string,
 
-		extend: (self: Error, options: ErrorOptions?) -> Error,
-		getErrorChain: (self: Error) -> {Error},
+		extend: (self: PromiseError, options: PromiseErrorOptions?) -> PromiseError,
+		getErrorChain: (self: PromiseError) -> {PromiseError},
 	},
-	{} :: {__tostring: (self: Error) -> string}
-))
-type ErrorStatic = ErrorStaticAndShared & {
-	new: (options: ErrorOptions?, parent: Error?) -> Error,
+	{} :: {__tostring: (self: PromiseError) -> string}
+	))
+export type PromiseErrorStatic = PromiseErrorStaticAndShared & {
+	new: (options: PromiseErrorOptions?, parent: PromiseError?) -> PromiseError,
 	is: (anything: any) -> boolean,
-	isKind: (anything: any, kind: ErrorKind) -> boolean,
+	isKind: (anything: any, kind: PromiseErrorKind) -> boolean,
 }
 
 export type Promise = {
@@ -84,16 +101,16 @@ export type TypedPromise<T...> = {
 	timeout: (self: Promise, seconds: number, rejectionValue: any?) -> TypedPromise<T...>,
 }
 
-type Signal<T...> = {
-	Connect: (self: Signal<T...>, callback: (T...) -> ...any) -> SignalConnection,
+export type PromiseSignal<T...> = {
+	Connect: (self: Signal<T...>, callback: (T...) -> ...any) -> PromiseSignalConnection,
 }
 
-type SignalConnection = {
-	Disconnect: (self: SignalConnection) -> ...any,
+export type PromiseSignalConnection = {
+	Disconnect: (self: PromiseSignalConnection) -> ...any,
 	[any]: any,
 }
 export type PromiseStatic = {
-	Error: ErrorStatic,
+	Error: PromiseErrorStatic,
 	Status: {
 		Started: "Started",
 		Resolved: "Resolved",
