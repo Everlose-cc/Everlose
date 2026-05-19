@@ -172,47 +172,62 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig)
 	end
 	local TargetCharacter = Plr.Character
 
-	local Shootcode = RandomStr(30) .. ShotCount
-	ShotCount += 1
-	task.delay(5, function()
-		ShotCount -= 1
-	end)
+	local fireModeSettings = ToolConfig.FireModeSettings
 
-	local BulletOrigin = LocalCharacter.Head.Position
-	local TargetPosition = TargetCharacter.Head.Position
+	local fireRate = (1 / ToolConfig.FireRate)
+	local burstRate = (1 / fireModeSettings.BurstRate) or 0
 
-	local Directions = {}
-	table.insert(Directions, (TargetPosition - BulletOrigin))
+	local function castBullet(extraData: {})
+		local Shootcode = RandomStr(30) .. ShotCount
+		ShotCount += 1
+		task.delay(5, function()
+			ShotCount -= 1
+		end)
 
-	Remotes.Gun_Shoot:FireServer(
-		codeGenerator(), --Salt
-		Shootcode, --ShootCode
-		Tool, --Weapon
-		"FDS9I83", --Remote validation key
-		BulletOrigin, --Origin (Vector3)
-		Directions, --Bullet Directions
-		false --Bullet type <- always false since we aint admins xd
-	)
+		local BulletOrigin = LocalCharacter.Head.Position
+		local TargetPosition = TargetCharacter.Head.Position
 
-	for _, Dir in Directions do
-		BloodFx(ToolConfig, BulletOrigin, Dir, TargetCharacter.Head, TargetPosition, Vector3.xAxis, {})
-		Remotes.Gun_Hit:FireServer(
-			"\240\159\167\136", --Bullet hit code
+		local Directions = {}
+		table.insert(Directions, (TargetPosition - BulletOrigin))
+
+		Remotes.Gun_Shoot:FireServer(
+			codeGenerator() + (extraData and extraData.cgAdd or 0), --Salt
+			Shootcode, --ShootCode
 			Tool, --Weapon
-			Shootcode,
-			1,
-			TargetCharacter.Head, --HitPart
-			TargetPosition,
-			Dir,
-			nil,
-			{
-				"Front",
-				UDim2.new(0, 0, 0, 0),
-				Vector2.zero,
-			}
+			"FDS9I83", --Remote validation key
+			BulletOrigin, --Origin (Vector3)
+			Directions, --Bullet Directions
+			false --Bullet type <- always false since we aint admins xd
 		)
+
+		for _, Dir in Directions do
+			BloodFx(ToolConfig, BulletOrigin, Dir, TargetCharacter.Head, TargetPosition, Vector3.xAxis, {})
+			Remotes.Gun_Hit:FireServer(
+				"\240\159\167\136", --Bullet hit code
+				Tool, --Weapon
+				Shootcode,
+				1,
+				TargetCharacter.Head, --HitPart
+				TargetPosition,
+				Dir,
+				nil,
+				{
+					"Front",
+					UDim2.new(0, 0, 0, 0),
+					Vector2.zero,
+				}
+			)
+		end
+	end
+
+	for bullet: number = 1, fireModeSettings.BurstAmount do
+		warn("shot after", burstRate)
+		castBullet({ cgAdd = 0 })
+		task.wait((fireModeSettings. urstRate or fireRate))
 	end
 end
+
+
 
 local function ShootAll()
 	local zLocalCharacter = LocalPlayer.Character
@@ -239,7 +254,7 @@ local function ShootAll()
 	local Config = require(Tool.Config)
 	local FireRate = Config.FireRate
 
-	if tick() - LastShoot <= 60 / FireRate then
+	if tick() - LastShoot <= 1 / FireRate then
 		return
 	end
 
@@ -247,7 +262,7 @@ local function ShootAll()
 		if Player ~= LocalPlayer and Player.Character and Player.Character:FindFirstChild("Head") then
 			print("tiro")
 			LastShoot = tick()
-			--SafeCall(Shoot, Player, Config)
+			-- SafeCall(Shoot, Player, Config)
 		end
 	end
 end
@@ -279,13 +294,17 @@ _G.Thread = task.spawn(function()
 
 				if name:lower() == "cg" and not exists(codeGenerator) then
 					codeGenerator = clonefunction(fn)
-					print('Got codeGenerator')
+					print("Got codeGenerator")
 				end
 			end
 		end
 	end
-	print("porn")
-	while task.wait() do
-		ShootAll()
+	-- print("porn")
+	-- while task.wait() do
+	-- 	ShootAll()
+	-- end
+	for i = 1, 2 do
+		local Gun = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+		Shoot(Players.Guest463920.Character, Gun, require(Gun.Config))
 	end
 end)
