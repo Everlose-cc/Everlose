@@ -1,15 +1,26 @@
 local RunService = game:GetService("RunService")
 local Players = cloneref(game:GetService("Players"))
 local ReplicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local Stats = cloneref(game:GetService("Stats"))
 
 local Events = ReplicatedStorage:WaitForChild("Events")
 local Remotes = {
 	Gun_Shoot = Events.GNX_S,
+	Gun_Reload = Events.GNX_R,
 	Gun_Hit = Events.ZFKLF_H,
+}
+local ReloadKeys = {
+	Start = "STZNRD",
+	End = "KLWE89U0",
 }
 local GameEnv = getrenv()
 local CrimCrosshair = GameEnv._G.DCH
 local LocalPlayer: Player = Players.LocalPlayer
+
+local lastReload = 0
+local function checkReloadDelay() : (boolean)
+	return ((os.clock() - lastReload) >= 1)
+end
 
 local function printTable(t: {})
 	print(tostring(t) .. "-> {")
@@ -209,7 +220,18 @@ end
 local ShootOffsetTRASHhold = 20 -- 28
 local RadiusMul = 2.5 -- 5
 
-local function ShootAll()
+local function getPing() : (number)
+	local set = 8
+	local old = getthreadidentity()
+	setthreadidentity(set)
+	local Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+	if set ~= old then
+		setthreadidentity(old)
+	end
+	return Ping
+end
+
+local function getCurrentGun(): (Tool?)
 	local zLocalCharacter = LocalPlayer.Character
 	if not zLocalCharacter or not zLocalCharacter:FindFirstChild("Head") then
 		return
@@ -232,13 +254,56 @@ local function ShootAll()
 		return
 	end
 
+	return Tool, require(Tool.Config)
+end
+
+local function serverTick(): number
+	return (workspace:GetServerTimeNow())
+end
+
+local function reload(gun: Tool?, cfg: {[any]: any}?)
+	if not gun or not cfg then
+		return
+	end
+
+	local values = gun:FindFirstChild("Values")
+    if not values or values.SERVER_Ammo.Value >= values.SERVER_Ammo.MaxValue then
+        return
+    end
+
+	local function _rl()
+		local SaltC = serverTick()
+
+		local _rand = math.random()
+
+		lastReload = os.clock()
+		Remotes.Gun_Reload:FireServer(SaltC, ReloadKeys.Start, gun, nil, nil)
+		task.delay(0.1, function()
+			local timeTaken = serverTick() + (serverTick() - SaltC)
+			Remotes.Gun_Reload:FireServer(timeTaken + (cfg.ReloadTime + _rand), ReloadKeys.End, gun, _rand, nil)
+		end)
+	end
+	xpcall(_rl, warn)
+end
+
+local function ShootAll()
+	local zLocalCharacter = LocalPlayer.Character
+	if not zLocalCharacter or not zLocalCharacter:FindFirstChild("Head") then
+		return
+	end
+
+	local Tool, Config = getCurrentGun()
+	if not Tool or not Config then
+		return
+	end
+
+	local ServerAmmo = Tool.Values.SERVER_Ammo
 	local Ammo = Tool.Values.Ammo
 	local Reloading = Tool.Values.Reloading
 
-	local Config = require(Tool.Config)
 	local FireRate = Config.FireRate
 
-	if Ammo.Value <= 0 then
+	if ServerAmmo.Value <= 0 then
 		return
 	end
 
@@ -248,7 +313,7 @@ local function ShootAll()
 
 	if
 		tick() - LastShoot
-		<= ((1 / FireRate) + (game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 100000))
+		<= ((1 / FireRate) + (getPing() / 100))
 	then
 		return
 	end
@@ -335,76 +400,21 @@ local function ShootAll()
 	if Target then
 		LastShoot = tick()
 		Ammo.Value -= 1
+		if Ammo.Value <= 0 then
+			Ammo.Value = ServerAmmo.Value
+		end
+
 		SafeCall(Shoot, Target.Player, Tool, Config, Target.Origin)
-	end
 
-	--[=[
-	for _, Player in Players:GetPlayers() do
-		local TargetChar = Player.Character
-		local TargetHum = TargetChar and TargetChar:FindFirstChildOfClass("Humanoid")
-		if Player:IsFriendsWith(LocalPlayer.UserId) then
-			continue
+		local function canReload() : (boolean)
+			local ServerAmmo: DoubleConstrainedValue = Tool.Values.SERVER_Ammo
+			return (not Reloading.Value and ServerAmmo.Value <= math.round(ServerAmmo.MaxValue/2))
 		end
-		if
-			Player ~= LocalPlayer
-			and TargetChar
-			and TargetChar:FindFirstChild("Head")
-			and not TargetChar:FindFirstChildOfClass("ForceField")
-			and TargetHum
-			and TargetHum.Health >= 1
-		then
-			local TargetHead = Player.Character.Head
-			local TargetPos = TargetHead.Position
-			local Look = (TargetPos - LocalHeadPos).Unit
 
-			local Right = Look:Cross(Vector3.yAxis)
-			if Right.Magnitude < 0.001 then
-				Right = Vector3.xAxis
-			else
-				Right = Right.Unit
-			end
-			local Up = Right:Cross(Look).Unit
-
-			local ValidOrigin = nil
-
-			if CheckWallHit(Player, LocalHeadPos, TargetPos, TargetHead) then
-				ValidOrigin = LocalHeadPos
-			else
-				local Found = false
-				for Radius = 5, ShootOffsetTRASHhold, 5 do
-					local Offsets = {
-						Up * Radius,
-						Right * Radius,
-						-Right * Radius,
-						(Up + Right).Unit * Radius,
-						(Up - Right).Unit * Radius,
-						-Up * Radius,
-					}
-
-					for _, OffsetVector in Offsets do
-						local TestOrigin = LocalHeadPos + OffsetVector
-
-						if CheckWallHit(Player, TestOrigin, TargetPos, TargetHead) then
-							ValidOrigin = TestOrigin
-							Found = true
-							break
-						end
-					end
-
-					if Found then
-						break
-					end
-				end
-			end
-
-			if ValidOrigin then
-				LastShoot = tick()
-				Ammo.Value -= 1
-				SafeCall(Shoot, Player, Tool, Config, ValidOrigin)
-			end
+		if (Tool.Parent == zLocalCharacter and checkReloadDelay() and canReload()) then
+			reload(Tool, Config)
 		end
 	end
-	]=]
 end
 
 if _G.Thread then
