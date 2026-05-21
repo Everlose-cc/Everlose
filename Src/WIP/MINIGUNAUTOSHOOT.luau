@@ -14,7 +14,6 @@ local ReloadKeys = {
 	End = "KLWE89U0",
 }
 local GameEnv = getrenv()
-local CrimCrosshair = GameEnv._G.DCH
 local LocalPlayer: Player = Players.LocalPlayer
 
 local lastReload = 0
@@ -213,7 +212,7 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 			}
 		)
 
-		CrimCrosshair.hitmarker()
+		GameEnv._G.DCH.hitmarker()
 	end
 end
 
