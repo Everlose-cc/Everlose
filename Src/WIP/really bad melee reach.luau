@@ -17,6 +17,9 @@ if _G.ReachThreads then
 	end
 end
 
+oth.unhook(getrawmetatable(game).__namecall)
+oth.unhook(typeof)
+
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
@@ -163,7 +166,9 @@ local function getNearestTarget()
 		return a.Distance < b.Distance
 	end)
 
-	setthreadidentity(old)
+	if old ~= 8 then
+		setthreadidentity(old)
+	end
 
 	return list
 end
@@ -171,12 +176,12 @@ end
 local nearest = nil
 
 connect(RunService.Heartbeat, function(dt: number)
-    local currentNearest = getNearestTarget()[1]
-    if currentNearest then
-        nearest = currentNearest
-    else
-        nearest = nil
-    end
+	local currentNearest = getNearestTarget()[1]
+	if currentNearest then
+		nearest = currentNearest
+	else
+		nearest = nil
+	end
 end, "connect")
 
 oth.hook(raw.__namecall, function(...)
@@ -184,14 +189,13 @@ oth.hook(raw.__namecall, function(...)
 
 	local self = select(1, ...)
 
-	local caller = checkcaller()
 	local method = getnamecallmethod()
 	local source = getcallingscript()
 
-	if not caller and self == workspace then
-		if method == "Raycast" then
-			if currentTool and source:GetFullName():find(currentTool.Name) then
-				if nearest then
+	if self == workspace and not checkcaller() then
+		if method:lower() == "raycast" then
+			if currentTool and source.Name == "Client" and source.Parent == currentTool then
+				if nearest ~= nil then
 					local rayResult = setmetatable({ __hi = true }, {
 						__index = {
 							Distance = nearest.Distance,

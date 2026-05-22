@@ -1,3 +1,5 @@
+--!nocheck
+
 local RunService = game:GetService("RunService")
 local Players = cloneref(game:GetService("Players"))
 local ReplicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
@@ -16,10 +18,38 @@ local ReloadKeys = {
 local GameEnv = getrenv()
 local LocalPlayer: Player = Players.LocalPlayer
 
-local lastReload = 0
-local function checkReloadDelay() : (boolean)
-	return ((os.clock() - lastReload) >= 1)
+local function serverTick(): number
+	return (workspace:GetServerTimeNow())
 end
+
+local lastReload = 0
+local function checkReloadDelay(): boolean
+	return ((serverTick() - lastReload) >= 1)
+end
+
+local function getPing(): number
+	local set = 8
+	local old = getthreadidentity()
+	setthreadidentity(set)
+	local Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+	if set ~= old then
+		setthreadidentity(old)
+	end
+	return Ping
+end
+
+local function pingWait() : (number)
+	local start = serverTick()
+	while RunService.Stepped:Wait() do
+		local current = serverTick()
+		if (current - start) >= getPing() then
+			return current
+		end
+	end
+	return 0
+end
+
+-- local cg = clonefunction(filtergc("function", { Name = "cg" }, true))
 
 local function printTable(t: {})
 	print(tostring(t) .. "-> {")
@@ -177,7 +207,7 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 		end
 	end)
 	--------------------------------------------------------------------
-	local SaltC = tick()
+	local SaltC = serverTick()
 
 	local BulletType = false
 	if ToolConfig.BulletTypeChange and ToolConfig.BulletTypeChange.Enabled then
@@ -219,18 +249,7 @@ end
 local ShootOffsetTRASHhold = 20 -- 28
 local RadiusMul = 2.5 -- 5
 
-local function getPing() : (number)
-	local set = 8
-	local old = getthreadidentity()
-	setthreadidentity(set)
-	local Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-	if set ~= old then
-		setthreadidentity(old)
-	end
-	return Ping
-end
-
-local function getCurrentGun(): (Tool?)
+local function getCurrentGun(): Tool?
 	local zLocalCharacter = LocalPlayer.Character
 	if not zLocalCharacter or not zLocalCharacter:FindFirstChild("Head") then
 		return
@@ -256,33 +275,26 @@ local function getCurrentGun(): (Tool?)
 	return Tool, require(Tool.Config)
 end
 
-local function serverTick(): number
-	return (workspace:GetServerTimeNow())
-end
-
-local function reload(gun: Tool?, cfg: {[any]: any}?)
+local function reload(gun: Tool?, cfg: { [any]: any }?)
 	if not gun or not cfg then
 		return
 	end
 
 	local values = gun:FindFirstChild("Values")
-    if not values or values.SERVER_Ammo.Value >= values.SERVER_Ammo.MaxValue then
-        return
-    end
+	if not values or values.SERVER_Ammo.Value >= values.SERVER_Ammo.MaxValue then
+		return
+	end
 
 	local function _rl()
 		local SaltC = serverTick()
 
-		local _rand = math.random()
-
-		lastReload = os.clock()
+		lastReload = serverTick()
 		Remotes.Gun_Reload:FireServer(SaltC, ReloadKeys.Start, gun, nil, nil)
-		task.delay(0.1, function()
-			local timeTaken = serverTick() + (serverTick() - SaltC)
-			Remotes.Gun_Reload:FireServer(timeTaken + (cfg.ReloadTime + _rand), ReloadKeys.End, gun, _rand, nil)
-		end)
+		pingWait()
+		Remotes.Gun_Reload:FireServer(SaltC + cfg.ReloadTime, ReloadKeys.End, gun, math.random(), nil)
+		pingWait()
 	end
-	xpcall(_rl, warn)
+	_rl()
 end
 
 local function ShootAll()
@@ -310,10 +322,7 @@ local function ShootAll()
 		return
 	end
 
-	if
-		tick() - LastShoot
-		<= ((1 / FireRate) + (getPing() / 100))
-	then
+	if serverTick() - LastShoot <= ((1 / FireRate) + (getPing() / 100)) then
 		return
 	end
 
@@ -397,7 +406,7 @@ local function ShootAll()
 
 	local Target = List[1]
 	if Target then
-		LastShoot = tick()
+		LastShoot = serverTick()
 		Ammo.Value -= 1
 		if Ammo.Value <= 0 then
 			Ammo.Value = ServerAmmo.Value
@@ -405,12 +414,12 @@ local function ShootAll()
 
 		SafeCall(Shoot, Target.Player, Tool, Config, Target.Origin)
 
-		local function canReload() : (boolean)
+		local function canReload(): boolean
 			local ServerAmmo: DoubleConstrainedValue = Tool.Values.SERVER_Ammo
-			return (not Reloading.Value and ServerAmmo.Value <= math.round(ServerAmmo.MaxValue/2))
+			return (not Reloading.Value and ServerAmmo.Value <= math.round(ServerAmmo.MaxValue / 2))
 		end
 
-		if (Tool.Parent == zLocalCharacter and checkReloadDelay() and canReload()) then
+		if Tool.Parent == zLocalCharacter and checkReloadDelay() and canReload() then
 			reload(Tool, Config)
 		end
 	end
