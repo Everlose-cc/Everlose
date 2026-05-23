@@ -140,9 +140,6 @@ local function targetable(character: Model)
 	return true, Humanoid, Head, distance
 end
 local function getNearestTarget()
-	local old = getthreadidentity()
-	setthreadidentity(8)
-
 	local list = {}
 	for _, player in Players:GetPlayers() do
 		if player ~= LocalPlayer and not player:IsFriendsWith(LocalPlayer.UserId) then
@@ -166,22 +163,13 @@ local function getNearestTarget()
 		return a.Distance < b.Distance
 	end)
 
-	if old ~= 8 then
-		setthreadidentity(old)
-	end
-
 	return list
 end
 
 local nearest = nil
-
-connect(RunService.Heartbeat, function(dt: number)
-	local currentNearest = getNearestTarget()[1]
-	if currentNearest then
-		nearest = currentNearest
-	else
-		nearest = nil
-	end
+connect(RunService.Heartbeat, function(dt:number)
+	local n = getNearestTarget()[1]
+	if n then nearest = n else nearest = nil end
 end, "connect")
 
 oth.hook(raw.__namecall, function(...)

@@ -9,12 +9,14 @@ local Events = ReplicatedStorage:WaitForChild("Events")
 local Remotes = {
 	Gun_Shoot = Events.GNX_S,
 	Gun_Reload = Events.GNX_R,
-	Gun_Hit = Events.ZFKLF_H,
+	Gun_Hit = Events.ZFKLF__H,
 }
 local ReloadKeys = {
 	Start = "STZNRD",
 	End = "KLWE89U0",
+	Cancel = "CANZZELCULTUUUR",
 }
+
 local GameEnv = getrenv()
 local LocalPlayer: Player = Players.LocalPlayer
 
@@ -22,9 +24,21 @@ local function serverTick(): number
 	return (workspace:GetServerTimeNow())
 end
 
+local Params = RaycastParams.new()
+Params.FilterType = Enum.RaycastFilterType.Blacklist
+Params.IgnoreWater = true
+Params.CollisionGroup = "Character"
+
 local lastReload = 0
-local function checkReloadDelay(): boolean
-	return ((serverTick() - lastReload) >= 1)
+
+local function Notify(msg: string, duration: number, textColor: Color3, textStroke: Color3, type: string)
+	ReplicatedStorage.Events2.ClientWarn:Fire({
+		msg,
+		duration,
+		textColor,
+		textStroke,
+		type,
+	})
 end
 
 local function getPing(): number
@@ -38,11 +52,15 @@ local function getPing(): number
 	return Ping
 end
 
-local function pingWait() : (number)
+local function pingWait(_mul: number?): number
+	if not _mul then
+		_mul = 1
+	end
+
 	local start = serverTick()
 	while RunService.Stepped:Wait() do
 		local current = serverTick()
-		if (current - start) >= getPing() then
+		if (current - start) >= (getPing() * _mul) then
 			return current
 		end
 	end
@@ -71,15 +89,11 @@ local function CheckWallHit(Player, StartPos, HitPos, HitPart)
 	if Player and Player.Character then
 		table.insert(Ignore, Player.Character)
 	end
-
-	local Params = RaycastParams.new()
-	Params.FilterType = Enum.RaycastFilterType.Blacklist
-	Params.IgnoreWater = true
-	Params.CollisionGroup = "Character"
 	Params.FilterDescendantsInstances = Ignore
 
 	local Origin = StartPos
-	local Remaining = Direction.Unit * Mag
+	-- local Remaining = Direction.Unit * Mag
+	local Remaining = Direction
 	local HitResult = nil
 
 	for _ = 1, 10 do
@@ -118,7 +132,7 @@ local function CheckWallHit(Player, StartPos, HitPos, HitPart)
 	end
 
 	local DistToTarget = (HitResult.Position - HitPos).Magnitude
-	local MaxPenetration = 25 + (HitPart.AssemblyLinearVelocity.Magnitude / 2) -- / 0
+	local MaxPenetration = 25 + (HitPart.AssemblyLinearVelocity.Magnitude / 2)
 
 	return DistToTarget < MaxPenetration
 end
@@ -151,7 +165,7 @@ end
 
 local LastShoot = 0
 
-local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, BulletOrigin: Vector3)
+local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig: { [any]: any }, BulletOrigin: Vector3)
 	local Plr = (Target:IsA("Model") and Players:GetPlayerFromCharacter(Target) or Target:IsA("Player") and Target)
 		or nil
 	if not Plr then
@@ -169,7 +183,7 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 
 	local Directions = {}
 	for _ = 1, (ToolConfig.BulletsPerShot or 1) do
-		table.insert(Directions, (TargetPosition - BulletOrigin))
+		table.insert(Directions, (TargetPosition - BulletOrigin).Unit)
 	end
 
 	task.spawn(function() --debug stuff test
@@ -213,7 +227,6 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 	if ToolConfig.BulletTypeChange and ToolConfig.BulletTypeChange.Enabled then
 		BulletType = ToolConfig.BulletTypeChange.M1
 	end
-
 	Remotes.Gun_Shoot:FireServer(
 		SaltC, --Salt
 		Shootcode, --ShootCode
@@ -223,15 +236,13 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 		Directions, --Bullet Directions
 		BulletType --Bullet type
 	)
-	for _, Dir in Directions do
-		--BloodFx(ToolConfig, BulletOrigin, Dir, TargetCharacter.Head, TargetPosition, Vector3.xAxis, {})
+	for idx, Dir in Directions do
 		Remotes.Gun_Hit:FireServer(
-			"\240\159\141\175", --Bullet hit code
-			SaltC, --Weapon
+			"\xF0\x9F\xA7\x88",
 			Tool,
 			Shootcode,
-			1,
-			TargetCharacter.Head, --HitPart
+			idx,
+			TargetCharacter.Head,
 			TargetPosition,
 			Dir,
 			nil,
@@ -241,15 +252,14 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig, Bul
 				Vector2.zero,
 			}
 		)
-
 		GameEnv._G.DCH.hitmarker()
 	end
 end
 
-local ShootOffsetTRASHhold = 20 -- 28
+local ShootOffsetTRASHhold = 19 -- 19
 local RadiusMul = 2.5 -- 5
 
-local function getCurrentGun(): Tool?
+local function getCurrentGun(): (Tool?, { [any]: any }?)
 	local zLocalCharacter = LocalPlayer.Character
 	if not zLocalCharacter or not zLocalCharacter:FindFirstChild("Head") then
 		return
@@ -285,14 +295,27 @@ local function reload(gun: Tool?, cfg: { [any]: any }?)
 		return
 	end
 
-	local function _rl()
-		local SaltC = serverTick()
+	local function _can()
+		return gun and gun.Parent and gun.Parent == LocalPlayer.Character
+	end
 
-		lastReload = serverTick()
-		Remotes.Gun_Reload:FireServer(SaltC, ReloadKeys.Start, gun, nil, nil)
-		pingWait()
-		Remotes.Gun_Reload:FireServer(SaltC + cfg.ReloadTime, ReloadKeys.End, gun, math.random(), nil)
-		pingWait()
+	local function _rl()
+		local code = math.random()
+		if _can() then
+			if not gun:GetAttribute("___lol") then
+				gun:SetAttribute("___lol", true)
+				Remotes.Gun_Reload:FireServer(serverTick() - 10, ReloadKeys.Start, gun, code, nil)
+				Remotes.Gun_Reload:FireServer(serverTick() - 10, ReloadKeys.Cancel, gun, code)
+				task.delay(cfg.ReloadTime + 0.1, function()
+					gun:SetAttribute("___lol2", true)
+				end)
+			end
+		end
+		if _can() and gun:GetAttribute("___lol2") then
+			Notify("Reloaded", 1 / 60, BrickColor.Blue().Color, BrickColor.Black().Color, "allowance")
+			lastReload = serverTick()
+			Remotes.Gun_Reload:FireServer(serverTick() + cfg.ReloadTime, ReloadKeys.End, gun, nil, nil)
+		end
 	end
 	_rl()
 end
@@ -309,20 +332,62 @@ local function ShootAll()
 	end
 
 	local ServerAmmo = Tool.Values.SERVER_Ammo
+	local ServerStoredAmmo = Tool.Values.SERVER_StoredAmmo
+
 	local Ammo = Tool.Values.Ammo
+	local StoredAmmo = Tool.Values.StoredAmmo
+
 	local Reloading = Tool.Values.Reloading
 
 	local FireRate = Config.FireRate
 
-	if ServerAmmo.Value <= 0 then
-		return
+	local FireModeSettings = Config.FireModeSettings
+
+	local UseBurst = (
+		FireModeSettings
+		and FireModeSettings.CanSwitch
+		and FireModeSettings.SwitchTo == "Burst"
+		and FireModeSettings.BurstAmount
+	)
+			and true
+		or false
+
+	if UseBurst then
+		FireRate = FireModeSettings.BurstRate
+	end
+
+	local now = serverTick()
+
+	local function rl_check()
+		if
+			Tool.Parent == zLocalCharacter
+			and ((now - lastReload) >= (0.3 + getPing()))
+			and (not Reloading.Value and ServerAmmo.Value < ServerAmmo.MaxValue)
+		then
+			reload(Tool, Config)
+
+			StoredAmmo.Value = ServerStoredAmmo.Value
+			Ammo.Value = ServerAmmo.Value
+		end
+	end
+
+	if ServerAmmo.Value < ServerAmmo.MaxValue then
+		if ServerStoredAmmo.Value <= 0 and ServerAmmo.Value <= 0 then
+			return
+		end
+		if ServerStoredAmmo.Value > 0 then
+			rl_check()
+		end
+		if ServerAmmo.Value <= 0 then
+			return
+		end
 	end
 
 	if Reloading.Value then
 		return
 	end
 
-	if serverTick() - LastShoot <= ((1 / FireRate) + (getPing() / 100)) then
+	if now - LastShoot <= (1 / FireRate) then
 		return
 	end
 
@@ -406,22 +471,16 @@ local function ShootAll()
 
 	local Target = List[1]
 	if Target then
-		LastShoot = serverTick()
-		Ammo.Value -= 1
-		if Ammo.Value <= 0 then
-			Ammo.Value = ServerAmmo.Value
+		if ServerAmmo.Value <= 0 then
+			return
 		end
+
+		LastShoot = serverTick()
+
+		Ammo.Value = (ServerAmmo.Value - 1)
+		StoredAmmo.Value = ServerStoredAmmo.Value
 
 		SafeCall(Shoot, Target.Player, Tool, Config, Target.Origin)
-
-		local function canReload(): boolean
-			local ServerAmmo: DoubleConstrainedValue = Tool.Values.SERVER_Ammo
-			return (not Reloading.Value and ServerAmmo.Value <= math.round(ServerAmmo.MaxValue / 2))
-		end
-
-		if Tool.Parent == zLocalCharacter and checkReloadDelay() and canReload() then
-			reload(Tool, Config)
-		end
 	end
 end
 
