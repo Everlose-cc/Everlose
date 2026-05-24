@@ -1,5 +1,7 @@
 --!nocheck
 
+if _G.tracerModule then return end
+
 local TracerModule = (function()
 	local _InstanceCache = (function()
 		local ReallyFarCF = CFrame.new(Vector3.new(1e10, 1e10, 1e10))

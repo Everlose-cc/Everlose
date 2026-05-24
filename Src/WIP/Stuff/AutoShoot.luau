@@ -1,5 +1,15 @@
 --!nocheck
 
+shared.blacklist = {
+	
+}
+--^ userid or username
+
+
+
+
+
+
 local RunService = game:GetService("RunService")
 local Players = cloneref(game:GetService("Players"))
 local ReplicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
@@ -236,6 +246,7 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig: { [
 		Directions, --Bullet Directions
 		BulletType --Bullet type
 	)
+
 	for idx, Dir in Directions do
 		Remotes.Gun_Hit:FireServer(
 			"\xF0\x9F\xA7\x88",
@@ -397,7 +408,7 @@ local function ShootAll()
 	for _, Player in Players:GetPlayers() do
 		local TargetChar = Player.Character
 		local TargetHum = TargetChar and TargetChar:FindFirstChildOfClass("Humanoid")
-		if Player:IsFriendsWith(LocalPlayer.UserId) then
+		if (Player:IsFriendsWith(LocalPlayer.UserId) or not (table.find(shared.blacklist, Player.UserId) or table.find(shared.blacklist, Player.Name))) then
 			continue
 		end
 		if

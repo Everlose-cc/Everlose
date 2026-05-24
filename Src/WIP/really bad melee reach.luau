@@ -1,7 +1,9 @@
 --!nocheck
 --!nolint BuiltinGlobalWrite
 
+_G.MeleeReachDebug = false
 local function output(...)
+	if not _G.MeleeReachDebug then return end
 	print("Melee Reach: " .. tostring(...))
 end
 
@@ -167,9 +169,17 @@ local function getNearestTarget()
 end
 
 local nearest = nil
-connect(RunService.Heartbeat, function(dt:number)
-	local n = getNearestTarget()[1]
-	if n then nearest = n else nearest = nil end
+connect(RunService.Heartbeat, function(dt: number)
+	xpcall(function()
+		local n = getNearestTarget()[1]
+		if n then
+			nearest = n
+		else
+			nearest = nil
+		end
+	end, function(...)
+		output(...)
+	end)
 end, "connect")
 
 oth.hook(raw.__namecall, function(...)
