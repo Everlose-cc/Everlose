@@ -179,7 +179,9 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig: { [
 		ShotCount -= 1
 	end)
 
-	local TargetPosition = TargetCharacter.Head.Position
+	local HeadPos = TargetCharacter.Head.Position
+	local randomOffset = Vector3.new(math.random(-5, 5), math.random(-5, 5), math.random(-5, 5))
+	local TargetPosition = HeadPos + randomOffset
 
 	local Directions = {}
 	for _ = 1, (ToolConfig.BulletsPerShot or 1) do
@@ -354,7 +356,8 @@ local function ShootAll()
 		or false
 
 	if UseBurst then
-		FireRate = FireModeSettings.BurstRate
+		-- FireRate = FireModeSettings.BurstRate*10000
+		FireRate = 1e17
 	end
 
 	local now = serverTick()

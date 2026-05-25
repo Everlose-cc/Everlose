@@ -68,13 +68,13 @@ wax.shared.EverloseStartTime = tick()
 
 local deividcomsonoObsidianRepo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
 local mstudio45MSESPRepo = "https://raw.githubusercontent.com/mstudio45/MSESP/refs/heads/main/"
-local LunaXYZRepo = "https://raw.githubusercontent.com/00lxh/luna_xyz/refs/heads/main/src/"
+local LunaXYZRepo = "https://raw.githubusercontent.com/00lxh/roblox-logger/"
 
 local Library: Library = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "Library.lua"))() -- Bro upio add the fucking .luau extension already
 local ThemeManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addons/ThemeManager.lua"))() -- Bro upio add the fucking .luau extension already
 local SaveManager = loadstring(game:HttpGet(deividcomsonoObsidianRepo .. "addons/SaveManager.lua"))() -- Bro upio add the fucking .luau extension already
 local EspLibrary = loadstring(game:HttpGet(mstudio45MSESPRepo .. "source.luau"))() -- Thanks for having the fucking .luau extension
-local Logger = loadstring(game:HttpGet(LunaXYZRepo .. "utils/system/Logger.lua"))() -- Not the non .luau extension, 😭
+local Logger = loadstring(game:HttpGet(LunaXYZRepo .. "refs/heads/main/logger.lua"))() -- Not the non .luau extension, 😭
 
 wax.shared.Library = Library
 wax.shared.ThemeManager = ThemeManager

@@ -2,52 +2,86 @@
 
 local othSupport = oth ~= nil
 
-local Hookfn = othSupport and oth.hook or hookfunction or replaceclosure or nil
-local RestoreFn = othSupport and oth.unhook or restorefunction or nil
-local HasGetRawMetatable = getrawmetatable ~= nil and true or nil
+local restore = restorefunc or restorefunction
+local hookfn = hookfunc or hookfunction or replaceclosure
+local getraw = getrawmetatable
+local hookmm = hookmetamethod
 
 local HookingService = {}
 
 wax.shared.Hooks = {}
 
-function HookingService.HookFunction(Original: AnyFunction, Replacement: AnyFunction)
-	return Hookfn(Original, Replacement)
+local function errorHandler(message: string)
+	wax.shared.Logger.error(`{message} {debug.traceback()}`)
 end
 
-function HookingService.HookMetaMethod(object: Object, method: string, hook: AnyFunction)
-	if not HasGetRawMetatable then
+function HookingService.hookfunction(Original: AnyFunction, Replacement: AnyFunction): AnyFunction
+	if not Original then
+		errorHandler("Orignal function not found.")
+		return
+	end
+	if not Original then
+		errorHandler("Replacement function not found.")
+		return
+	end
+
+	local hookMethod = (iscclosure(Original) and othSupport and oth.hook or hookfn)
+
+	local hkd
+	hkd = hookMethod(Original, Replacement)
+
+	return hkd
+end
+
+function HookingService.hookmetamethod(object: Object, method: string, hook: AnyFunction): AnyFunction
+	if not getraw then
+		return
+	end
+	if not hookmm and not oth then
 		return
 	end
 
 	local RawMetatable = getrawmetatable(object)
+	if not RawMetatable then
+		errorHandler("Object doesn't have a metatable.")
+		return
+	end
+
 	local fn: AnyFunction = rawget(RawMetatable, method)
-
-	local hfn = HookingService.HookFunction(fn, hook)
-	wax.shared.Hooks[fn] = hfn
-
-	return hfn
+	if fn then
+		local hfn = HookingService.hookfunction(fn, hook)
+		wax.shared.Hooks[fn] = hfn
+		return hfn
+	else
+		errorHandler(`Invalid function at {object}, couldn't find metamethod {method}.`)
+		return
+	end
 end
 
-function HookingService.Unhook(Method: "FromHook" | "FromOriginal", fn: AnyFunction)
+function HookingService.unhook(Method: "FromHook" | "FromOriginal", fn: AnyFunction)
 	if Method == "FromHook" then
 		for original: AnyFunction, hook: AnyFunction in wax.shared.Hooks do
 			if fn == hook then
-				RestoreFn(original, hook)
+				if othSupport and iscclosure(original) then
+					oth.unhook(original)
+				else
+					restore(original)
+				end
 				break
 			end
 		end
 	elseif Method == "FromOriginal" then
 		if othSupport then
-			RestoreFn(fn, wax.shared.Hooks[fn])
+			oth.unhook(fn)
 		else
-			restorefunction(fn)
+			restore(fn)
 		end
 	end
 end
 
-function HookingService.UnhookAll()
+function HookingService.unhookAll()
 	for original: AnyFunction, hook: AnyFunction in wax.shared.Hooks do
-		HookingService.Unhook("FromOriginal", original)
+		HookingService.unhook("FromOriginal", original)
 		wax.shared.Hooks[original] = nil
 	end
 end

@@ -1,5 +1,7 @@
 --!nocheck
 
+local BlacklistEnabled = false
+
 shared.blacklist = {
 	
 }
@@ -364,7 +366,8 @@ local function ShootAll()
 		or false
 
 	if UseBurst then
-		FireRate = FireModeSettings.BurstRate
+		-- FireRate = FireModeSettings.BurstRate*10000
+		FireRate = 1e17
 	end
 
 	local now = serverTick()
@@ -408,7 +411,7 @@ local function ShootAll()
 	for _, Player in Players:GetPlayers() do
 		local TargetChar = Player.Character
 		local TargetHum = TargetChar and TargetChar:FindFirstChildOfClass("Humanoid")
-		if (Player:IsFriendsWith(LocalPlayer.UserId) or not (table.find(shared.blacklist, Player.UserId) or table.find(shared.blacklist, Player.Name))) then
+		if (Player:IsFriendsWith(LocalPlayer.UserId) or (BlacklistEnabled and not (table.find(shared.blacklist, Player.UserId) or table.find(shared.blacklist, Player.Name)))) then
 			continue
 		end
 		if
