@@ -1,3 +1,5 @@
+--!nocheck
+
 local ReallyFarCF = CFrame.new(Vector3.new(1e10, 1e10, 1e10))
 
 local InstanceCache = {}

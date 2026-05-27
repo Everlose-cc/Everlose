@@ -4,8 +4,6 @@ local Players = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
 
-local Map = workspace.Map
-
 local Await = 0
 
 local function getCharacter(): Model?

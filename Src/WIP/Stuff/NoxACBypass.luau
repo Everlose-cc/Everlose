@@ -16,6 +16,7 @@ for _, fn in functions do
                 if typeof(fn2) ~= "function" then return end
                 local s2, l2, n2, a2, f2 = debug.info(fn2, "slnaf")
                 print(`Subfn: {s2}, {l2}, {n2}, {a2}, {f2}`)
+				
                 hookfunc(fn2, function(...): ...any
                     return false
                 end)

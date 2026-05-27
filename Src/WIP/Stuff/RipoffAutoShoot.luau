@@ -181,11 +181,11 @@ local function Shoot(Target: Player | Model, Tool: Tool | Model, ToolConfig: { [
 
 	local HeadPos = TargetCharacter.Head.Position
 	local randomOffset = Vector3.new(math.random(-5, 5), math.random(-5, 5), math.random(-5, 5))
-	local TargetPosition = HeadPos + randomOffset
+	local TargetPosition = HeadPos
 
 	local Directions = {}
 	for _ = 1, (ToolConfig.BulletsPerShot or 1) do
-		table.insert(Directions, (TargetPosition - BulletOrigin))
+		table.insert(Directions, ((TargetPosition + randomOffset) - BulletOrigin))
 	end
 
 	task.spawn(function() --debug stuff test

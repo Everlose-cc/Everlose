@@ -1,3 +1,5 @@
+local Stats = wax.shared.Services.Stats
+
 local Janitor: Janitor = wax.shared.Janitor
 
 local LocalPlayer: Player = wax.shared.LocalPlayer
@@ -17,6 +19,39 @@ function ClientUtils.GetPositionOnScreen(Vector: Vector3)
 
 	local Vec3, OnScreen = Camera:WorldToScreenPoint(Vector)
 	return Vector2.new(Vec3.X, Vec3.Y), OnScreen
+end
+
+function ClientUtils.FindFirstChildOr(Parent, ...)
+	for _, Name in { ... } do
+		local Found = Parent:FindFirstChild(Name)
+		if Found then
+			return Found
+		end
+	end
+	return nil
+end
+
+function ClientUtils.RandomStr(Length: number): string
+	local Result = ""
+	for _ = 1, Length do
+		Result = Result .. string.char(math.random(65, 122))
+	end
+	return Result
+end
+
+function ClientUtils.GetPing(): number
+	local Set = 8
+	local Old = getthreadidentity()
+	setthreadidentity(Set)
+	local Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+	if Set ~= Old then
+		setthreadidentity(Old)
+	end
+	return Ping
+end
+
+function ClientUtils.ServerTick(): number
+	return workspace:GetServerTimeNow()
 end
 
 function ClientUtils.GetMouseRay()
